@@ -1,4 +1,5 @@
 # my_db/query.py
+import re
 
 def execute_query(parsed, db):
     """Execute parsed SQL commands"""
@@ -19,11 +20,15 @@ def execute_query(parsed, db):
     
     elif query_type == "SELECT":
         return select_from(parsed, db)
+    
     elif query_type == "UPDATE":
         return update_table(parsed, db)
+    
     elif query_type == "DELETE":
         return delete_from(parsed, db)
     
+    elif query_type == "DROP_TABLE":
+        return drop_table(parsed, db)
     else:
         raise ValueError(f"Unknown query type: {query_type}")
 
@@ -59,6 +64,28 @@ def insert_into(parsed, db):
     row = {}
     for i, col in enumerate(table["columns"]):
         row[col["name"]] = values[i] if i < len(values) else None
+
+    # check PRIMARY KEY constraint
+    for col in table["columns"]:
+        if col.get("primary_key"):
+            pk_col = col["name"]
+            pk_value = row[pk_col]
+
+            for existing_row in table["rows"]:
+                if existing_row.get(pk_col) == pk_value:
+                    actual_name = db.get_table_name(table_name)
+                    return f"Error: Duplicate PRIMARY KEY value '{pk_value}' for column '{pk_col}' in table '{actual_name}'"
+                
+    # check unique constraints
+    for col in table["columns"]:
+        if col.get("unique"):
+            unique_col = col["name"]
+            unique_value = row[unique_col]
+
+            for existing_row in table["rows"]:
+                if existing_row.get(unique_col) == unique_value:
+                    actual_name = db.get_table_name(table_name)
+                    return f"Error: Duplicate UNIQUE value '{unique_value}' for column '{unique_col}' in table '{actual_name}'"
     
     table["rows"].append(row)
     
@@ -133,13 +160,78 @@ def describe_table(parsed, db):
 
 
 def filter_rows(rows, where_clause):
-    """Simple WHERE filtering (col = value)"""
-    # Parse WHERE: "id = 1" or "description = 'Milk'"
-    parts = where_clause.split("=")
-    col_name = parts[0].strip()
-    value = parts[1].strip().strip("'\"")
+    """Simple WHERE filtering with multiple operators)"""
+    # determine operator
+    if ">=" in where_clause:
+        operator = ">="
+    elif "<=" in where_clause:
+        operator = "<="
+    elif "!=" in where_clause or "<>" in where_clause:
+        operator = "!="
+    elif "=" in where_clause:
+        operator = "="
+    elif ">" in where_clause:
+        operator = ">"  
+    elif "<" in where_clause:
+        operator = "<"
+    elif "LIKE" in where_clause.upper():
+        operator = "LIKE"
+        parts = where_clause.split(" LIKE ", 1) if " LIKE " in where_clause else where_clause.split(" like ", 1)
+    else:
+        raise ValueError(f"Unsupported WHERE clause operator in: {where_clause}")
     
-    return [row for row in rows if str(row.get(col_name)) == value]
+    # Split condition
+    # if operator == "LIKE":
+    #     parts = where_clause.split("LIKE")
+    # else:
+    #     parts = where_clause.split(operator)
+
+    col_name = parts[0].strip()
+    value = parts[1].strip().strip("'\"")  # Remove quotes if any
+
+    # Filter rows based on operator
+    filtered = []
+    for row in rows:
+        row_value = str(row.get(col_name, ""))
+        if operator == "=":
+            if row_value == value:
+                filtered.append(row)
+        elif operator == "!=":
+            if row_value != value:
+                filtered.append(row)
+        elif operator == ">":
+            try:
+                if float(row_value) > float(value):
+                    filtered.append(row)
+            except ValueError:
+                if row_value > value: 
+                    filtered.append(row)
+        elif operator == "<":
+            try:
+                if float(row_value) < float(value):
+                    filtered.append(row)
+            except ValueError:
+                if row_value < value:
+                    filtered.append(row)
+        elif operator == ">=":
+            try:
+                if float(row_value) >= float(value):
+                    filtered.append(row)
+            except ValueError:
+                if row_value >= value:
+                    filtered.append(row)
+        elif operator == "<=":
+            try:
+                if float(row_value) <= float(value):
+                    filtered.append(row)
+            except ValueError:
+                if row_value <= value:
+                    filtered.append(row)
+        elif operator == "LIKE":
+            pattern = value.replace("%", ".*").replace("_", ".")
+            if re.search(f"^{pattern}$", row_value, re.IGNORECASE):
+                filtered.append(row)
+    return filtered
 
 
 def format_table(rows, selected_cols, all_columns):
@@ -232,3 +324,18 @@ def delete_from(parsed, db):
     
     actual_name = db.get_table_name(table_name)
     return f"✓ {len(rows_to_delete)} row(s) deleted from '{actual_name}'."
+
+
+def drop_table(parsed, db): 
+    """DROP TABLE tablename"""
+    table_name = parsed["table"]
+    
+    # Use case-insensitive lookup
+    actual_name = db.get_table_name(table_name)
+    
+    if not actual_name:
+        return f"Error: Table '{table_name}' does not exist"
+    
+    del db.tables[actual_name]
+    
+    return f"✓ Table '{actual_name}' dropped successfully."

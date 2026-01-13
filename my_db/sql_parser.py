@@ -40,9 +40,13 @@ def parse(command: str):
     elif command_type == "UPDATE":
         return parse_update(command)
     
-    # DELETE
+    # DELETE column from table
     elif command_type == "DELETE":
         return parse_delete(command)
+    
+    # delete table
+    elif command_type == "DROP" and len(tokens) > 1 and tokens[1].upper() == "TABLE":
+        return parse_drop_table(command)
     
     else:
         raise ValueError(f"Unknown command: {command_type}")
@@ -274,3 +278,23 @@ def parse_delete(command):
     
     except Exception as e:
         raise ValueError(f"Error parsing DELETE: {e}")
+    
+
+def parse_drop_table(command):
+    """
+    Parse: DROP TABLE tablename
+    """
+    try:
+        command_upper = command.upper()
+        if "TABLE" not in command_upper:
+            raise ValueError("Missing TABLE keyword")
+
+        table_name = command_upper.split("TABLE")[1].strip()
+        return {
+            "type": "DROP_TABLE",
+            "table": table_name
+        }
+    except Exception as e:
+        raise ValueError(f"Error parsing DROP TABLE: {e}")
+    
+    
