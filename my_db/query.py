@@ -1,6 +1,6 @@
 # my_db/query.py
 import re
-from my_db.index import create_index,update_indexes_on_insert,update_indexes_on_delete,update_indexes_on_update
+from my_db.index import create_index,update_indexes_on_insert,update_indexes_on_delete,update_indexes_on_update,lookup_by_index
 
 def execute_query(parsed, db):
     """Execute parsed SQL commands"""
@@ -20,7 +20,10 @@ def execute_query(parsed, db):
         return insert_into(parsed, db)
     
     elif query_type == "SELECT":
-        return select_from(parsed, db)
+        if parsed.get("join"):
+            return select_with_join(parsed,db)
+        else:
+            return select_from(parsed,db)
     
     elif query_type == "UPDATE":
         return update_table(parsed, db)
@@ -104,6 +107,52 @@ def insert_into(parsed, db):
     actual_name = db.get_table_name(table_name)
                 
     return f"✓ 1 row inserted into '{actual_name}'."
+
+
+
+def select_with_join(parsed, db):
+    base_table_name = parsed["table"]
+    join_info = parsed["join"]
+
+    base_table = db.get_table(base_table_name)
+    join_table = db.get_table(join_info["table"])
+
+    if not base_table or not join_table:
+        return "Error: One or more tables do not exist"
+
+    # Split qualified columns: products.id → (products, id)
+    left_table, left_col = join_info["left"].split(".")
+    right_table, right_col = join_info["right"].split(".")
+
+    results = []
+
+    for row in base_table["rows"]:
+        key = row.get(left_col)
+
+        matches = lookup_by_index(
+            db=db,
+            table_name=join_info["table"],
+            column=right_col,
+            value=key
+        )
+
+        if matches is None:
+            # No index → fallback scan
+            matches = [
+                r for r in join_table["rows"]
+                if r.get(right_col) == key
+            ]
+
+        for match in matches:
+            combined = {
+                f"{base_table_name}.{k}": v for k, v in row.items()
+            }
+            combined.update({
+                f"{join_info['table']}.{k}": v for k, v in match.items()
+            })
+            results.append(combined)
+
+    return results
 
 
 def select_from(parsed, db):
@@ -296,34 +345,43 @@ def filter_rows(rows, where_clause):
     
     return filtered
 
-def format_table(rows, selected_cols, all_columns):
-    """Format rows as a pretty table"""
+def format_table(rows, columns=None, schema_columns=None):
+    """
+    rows: list[dict]
+    columns: "*" or list of column names
+    """
+
     if not rows:
         return "No rows found."
-    
-    # Determine which columns to show
-    if selected_cols == "*":
-        cols_to_show = [col["name"] for col in all_columns]
-    else:
-        cols_to_show = selected_cols
-    
-    # Build output
-    output = []
-    
-    # Header
-    header = " | ".join(cols_to_show)
-    output.append(header)
-    output.append("-" * len(header))
-    
-    # Rows
-    for row in rows:
-        row_values = [str(row.get(col, "NULL")) for col in cols_to_show]
-        output.append(" | ".join(row_values))
-    
-    output.append(f"\n{len(rows)} row(s) returned.")
-    
-    return "\n".join(output)
 
+    # Determine columns
+    if columns == "*" or columns is None:
+        headers = list(rows[0].keys())
+    else:
+        headers = columns
+
+    # Calculate column widths
+    col_widths = {}
+    for h in headers:
+        max_width = len(h)
+        for row in rows:
+            value = str(row.get(h, ""))
+            max_width = max(max_width, len(value))
+        col_widths[h] = max_width
+
+    # Build header
+    header_line = " | ".join(h.ljust(col_widths[h]) for h in headers)
+    separator = "-" * len(header_line)
+
+    # Build rows
+    row_lines = []
+    for row in rows:
+        line = " | ".join(
+            str(row.get(h, "")).ljust(col_widths[h]) for h in headers
+        )
+        row_lines.append(line)
+
+    return "\n".join([header_line, separator] + row_lines + [f"\n{len(rows)} row(s) returned."])
 
 def update_table(parsed, db):
     """UPDATE tablename SET col = value WHERE condition"""
@@ -405,3 +463,5 @@ def drop_table(parsed, db):
     del db.tables[actual_name]
     
     return f"✓ Table '{actual_name}' dropped successfully."
+
+

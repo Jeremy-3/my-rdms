@@ -114,3 +114,20 @@ def update_indexes_on_delete(db, table_name, rows_to_delete):
                     index_data["map"][value].remove(row)
                     if not index_data["map"][value]:
                         del index_data["map"][value]
+
+def lookup_by_index(db, table_name, column, value):
+    """
+    Attempt to fetch matching rows using an index.
+    """
+    table_key = table_name.lower()
+    column_key = column.lower()
+
+    table_indexes = db.indexes.get(table_key)
+    if not table_indexes:
+        return None
+
+    index_data = table_indexes.get(column_key)
+    if not index_data:
+        return None
+
+    return index_data["map"].get(value, [])

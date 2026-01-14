@@ -167,6 +167,7 @@ def parse_select(command):
     Parse: SELECT * FROM tablename
     Parse: SELECT col1, col2 FROM tablename
     Parse: SELECT * FROM tablename WHERE column = value
+    Parse: SELECT * FROM tablename JOIN table2 ON a = b
     """
     try:
         # command = command.rstrip(";").strip()
@@ -175,32 +176,49 @@ def parse_select(command):
         if "FROM" not in command_upper:
             raise ValueError("Missing FROM keyword")
         
-        parts = command_upper.split("FROM")
+        #parts = command_upper.split("FROM")
         
-        # Extract columns
-        columns_str = parts[0].replace("SELECT", "").strip()
-        columns = "*" if columns_str == "*" else [c.strip() for c in columns_str.split(",")]
-        
-        # Extract table name and WHERE clause
-        table_part = parts[1].strip().split("WHERE")
-        table_name = table_part[0].strip().lower()
-        
-        where_clause = None
-        if len(table_part) > 1:
-            # Get the WHERE clause from original command (preserve case)
-            where_index = command.upper().index("WHERE") + 5
-            where_clause = command[where_index:].strip()
-        
-        return {
-            "type": "SELECT",
-            "table": table_name,
-            "columns": columns,
-            "where": where_clause
-        }
-    
-    except Exception as e:
-        raise ValueError(f"Error parsing SELECT: {e}")
+        # select section
+        select_part, rest = command_upper.split("FROM",1)
+        columns_str = select_part.replace("SELECT","").strip()
+        columns = ("*" if columns_str == "*" else [c.strip() for c in columns_str.split(",")])
 
+        rest_upper = rest.upper()
+
+        join = None
+        where = None
+
+        # join section
+        if "JOIN" in rest_upper:
+            from_part ,join_part = rest.split("JOIN",1)
+            base_table = from_part.strip().lower()
+
+            join_table_part , on_part = join_part.split("ON",1)
+            join_table = join_table_part.strip().lower()
+
+            if "=" not in on_part:
+                raise ValueError("JOIN condition must use '=' ")
+            
+            left_expr, right_expr = on_part.split("=" ,1)
+
+            join ={
+                "table":join_table,
+                "left":left_expr.strip().lower(),
+                "right":right_expr.strip().lower()
+            }
+        else:
+            base_table = rest.strip().lower()
+
+        return{
+            "type":"SELECT",
+            "table":base_table,
+            "columns":columns,
+            "join":join,
+            "where":where
+        }
+    except Exception as e:
+        raise ValueError(f"Error pasring select: {e}")
+    
 
 def parse_update(command):
     """
