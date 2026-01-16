@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import sys, os
+import sys, os , uvicorn
 
 # Add parent directory to path so we can import my_db
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -116,3 +116,9 @@ def info():
             "inventory": "/inventory"
         }
     }
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("web_app.main:app", host="0.0.0.0", port=port, reload=False)
+
+    
