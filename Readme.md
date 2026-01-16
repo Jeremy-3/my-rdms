@@ -1,6 +1,6 @@
 # 🏪 Inventory Management System - Custom RDBMS
 
-> A lightweight relational database management system (RDBMS) built from scratch in Python with a FastAPI web interface for inventory management.
+> A lightweight relational database management system (RDBMS) built from Python with a FastAPI web interface for inventory management.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](YOUR-RENDER-URL-HERE)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/Jeremy-3/inventory-rdbms.git)
