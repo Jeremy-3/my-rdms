@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Inventory</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Inventory</h1>
+      <nav>
+        <a href="/">Dashboard</a>
+        <a href="/suppliers">Suppliers</a>
+        <a href="/products">Products</a>
+      </nav>
+    </header>
+
+    <main>
+      <h2>All Inventory</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Warehouse</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in inventory %}
+          <tr>
+            <td>{{ inv[0] }}</td>
+            <td>
+              {% for p in products %} {% if p[0] == inv[1] %}{{ p[1] }}{% endif
+              %} {% endfor %}
+            </td>
+            <td>{{ inv[2] }}</td>
+            <td>{{ inv[3] }}</td>
+            <td>{{ inv[4] }}</td>
+            <td class="actions-cell">
+              <button class="btn-edit" data-id="{{ inv[0] }}" data-product="{{ inv[1] }}" data-quantity="{{ inv[2] }}" data-warehouse="{{ inv[3] }}" data-updated="{{ inv[4] }}" onclick="openEditModal(this)">✏️ Edit</button>
+              <form action="/inventory/delete/{{ inv[0] }}" method="post">
+                <button
+                  type="submit"
+                  class="btn-delete"
+                  title="Delete inventory item"
+                >
+                  🗑️ Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3>➕ Add to Inventory</h3>
+      <form action="/inventory/add" method="post">
+        <select name="product_id" required>
+          <option value="">-- Select a Product --</option>
+          {% for p in products %}
+          <option value="{{ p[0] }}">{{ p[1] }}</option>
+          {% endfor %}
+        </select>
+        <input type="number" name="quantity" placeholder="Quantity" required />
+        <input
+          type="text"
+          name="warehouse_location"
+          placeholder="Warehouse Location"
+          required
+        />
+        <input type="date" name="last_updated" required />
+        <button type="submit" class="btn-primary">Add Item</button>
+      </form>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        <h2>✏️ Edit Inventory Item</h2>
+        <form id="editForm" method="post">
+          <select id="editProductId" name="product_id" required>
+            {% for p in products %}
+            <option value="{{ p[0] }}">{{ p[1] }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" id="editQuantity" name="quantity" placeholder="Quantity" required />
+          <input
+            type="text"
+            id="editWarehouse"
+            name="warehouse_location"
+            placeholder="Warehouse Location"
+            required
+          />
+          <input type="date" id="editLastUpdated" name="last_updated" required />
+          <div class="modal-buttons">
+            <button type="submit" class="btn-primary">Update Item</button>
+            <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openEditModal(button) {
+        const id = button.getAttribute("data-id");
+        const productId = button.getAttribute("data-product");
+        const quantity = button.getAttribute("data-quantity");
+        const warehouse = button.getAttribute("data-warehouse");
+        const lastUpdated = button.getAttribute("data-updated");
+        
+        document.getElementById('editProductId').value = productId || "";
+        document.getElementById('editQuantity').value = quantity || "";
+        document.getElementById('editWarehouse').value = warehouse || "";
+        document.getElementById('editLastUpdated').value = lastUpdated || "";
+        document.getElementById('editForm').action = '/inventory/update/' + id;
+        document.getElementById('editModal').style.display = 'block';
+      }
+
+      function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+      }
+
+      window.onclick = function(event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
+      }
+    </script>
+  </body>
+</html>
+    </main>
+  </body>
+</html>

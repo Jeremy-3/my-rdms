@@ -424,11 +424,14 @@ def format_table(rows, columns=None, schema_columns=None):
     return "\n".join([header_line, separator] + row_lines + [f"\n{len(rows)} row(s) returned."])
 
 def update_table(parsed, db):
-    """UPDATE tablename SET col = value WHERE condition"""
+    """UPDATE tablename SET col = value, col2 = value2 WHERE condition"""
     table_name = parsed["table"]
-    column = parsed["column"]
-    value = parsed["value"]
+    updates = parsed.get("updates", {})  # Dictionary of {column: value}
     where_clause = parsed.get("where")
+    
+    # Backwards compatibility: handle old single-column format
+    if not updates and "column" in parsed and "value" in parsed:
+        updates = {parsed["column"]: parsed["value"]}
     
     # Get table (case-insensitive)
     table = db.get_table(table_name)
@@ -449,14 +452,14 @@ def update_table(parsed, db):
     if not rows_to_update:
         return "0 row(s) updated."
     
-    # Update rows
-    # updated_count = 0
-    # for row in rows_to_update:
-    #     if column in row:
-    #         row[column] = value
-    #         updated_count += 1
-
-    update_indexes_on_update(db, table_name,rows_to_update,column,value)
+    # Update rows - ACTUALLY UPDATE THE DATA
+    for row in rows_to_update:
+        for column, value in updates.items():
+            row[column] = value  # Update each column
+    
+    # Update indexes for each column
+    for column, value in updates.items():
+        update_indexes_on_update(db, table_name, rows_to_update, column, value)
     
     actual_name = db.get_table_name(table_name)
     return f"✓ {len(rows_to_update)} row(s) updated in '{actual_name}'."

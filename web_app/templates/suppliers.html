@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Suppliers</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Suppliers</h1>
+      <nav>
+        <a href="/">Dashboard</a>
+        <a href="/products">Products</a>
+        <a href="/inventory">Inventory</a>
+      </nav>
+    </header>
+
+    <main>
+      <h2>All Suppliers</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Contact Person</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in suppliers %}
+          <tr>
+            <td>{{ s[0] }}</td>
+            <td>{{ s[1] }}</td>
+            <td>{{ s[2] }}</td>
+            <td>{{ s[3] }}</td>
+            <td class="actions-cell">
+              <button
+                class="btn-edit"
+                data-id="{{ s[0] }}"
+                data-name="{{ s[1] }}"
+                data-contact="{{ s[2] }}"
+                data-email="{{ s[3] }}"
+                onclick="openEditModal(this)"
+              >
+                ✏️ Edit
+              </button>
+              <form
+                action="/suppliers/delete/{{ s[0] }}"
+                method="post"
+                style="display: inline"
+              >
+                <button
+                  type="submit"
+                  class="btn-delete"
+                  title="Delete supplier"
+                >
+                  🗑️ Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3>➕ Add New Supplier</h3>
+      <form action="/suppliers/add" method="post">
+        <input type="text" name="name" placeholder="Name" required />
+        <input
+          type="text"
+          name="contact_person"
+          placeholder="Contact Person"
+          required
+        />
+        <input type="email" name="email" placeholder="Email" required />
+        <button type="submit" class="btn-primary">Add Supplier</button>
+      </form>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        <h2>✏️ Edit Supplier</h2>
+        <form id="editForm" method="post">
+          <input
+            type="text"
+            id="editName"
+            name="name"
+            placeholder="Name"
+            required
+          />
+          <input
+            type="text"
+            id="editContactPerson"
+            name="contact_person"
+            placeholder="Contact Person"
+            required
+          />
+          <input
+            type="email"
+            id="editEmail"
+            name="email"
+            placeholder="Email"
+            required
+          />
+          <div class="modal-buttons">
+            <button type="submit" class="btn-primary">Update Supplier</button>
+            <button type="button" class="btn-cancel" onclick="closeEditModal()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openEditModal(button) {
+        const id = button.getAttribute("data-id");
+        const name = button.getAttribute("data-name");
+        const contactPerson = button.getAttribute("data-contact");
+        const email = button.getAttribute("data-email");
+
+        console.log("[DEBUG] Opening edit modal for ID:", id);
+        console.log(
+          "[DEBUG] Data - Name:",
+          name,
+          "Contact:",
+          contactPerson,
+          "Email:",
+          email
+        );
+
+        document.getElementById("editName").value = name || "";
+        document.getElementById("editContactPerson").value =
+          contactPerson || "";
+        document.getElementById("editEmail").value = email || "";
+        document.getElementById("editForm").action = "/suppliers/update/" + id;
+        document.getElementById("editModal").style.display = "block";
+      }
+
+      function closeEditModal() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      // Handle form submission
+      document
+        .getElementById("editForm")
+        .addEventListener("submit", function (event) {
+          console.log("[DEBUG] Form submitted to:", this.action);
+          // Don't prevent default - allow form to submit
+        });
+
+      window.onclick = function (event) {
+        const modal = document.getElementById("editModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
+</html>

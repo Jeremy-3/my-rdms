@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <h1>📦 Inventory Management System</h1>
+        <nav>
+          <a href="/">Dashboard</a>
+          <a href="/suppliers">Suppliers</a>
+          <a href="/products">Products</a>
+          <a href="/inventory">Inventory</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="dashboard-container">
+        <h2>Dashboard Overview</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-content">
+              <h3>Suppliers</h3>
+              <p class="stat-number">{{ suppliers_count }}</p>
+              <a href="/suppliers" class="stat-link">View All →</a>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <h3>Products</h3>
+              <p class="stat-number">{{ products_count }}</p>
+              <a href="/products" class="stat-link">View All →</a>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+              <h3>Inventory Items</h3>
+              <p class="stat-number">{{ inventory_count }}</p>
+              <a href="/inventory" class="stat-link">View All →</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-info">
+          <h3>📚 Database Structure & Relationships</h3>
+          <div class="documentation">
+            <div class="doc-section">
+              <h4>🏢 Suppliers Table</h4>
+              <p>
+                Stores information about product suppliers including their
+                contact details.
+              </p>
+              <ul>
+                <li>
+                  <strong>ID:</strong> Unique identifier for each supplier
+                </li>
+                <li><strong>Name:</strong> Company name</li>
+                <li><strong>Contact Person:</strong> Primary contact name</li>
+                <li><strong>Email:</strong> Contact email address</li>
+              </ul>
+            </div>
+
+            <div class="doc-section">
+              <h4>📦 Products Table</h4>
+              <p>Contains product details and links to suppliers.</p>
+              <ul>
+                <li><strong>ID:</strong> Unique identifier for each product</li>
+                <li><strong>Name:</strong> Product name</li>
+                <li><strong>Description:</strong> Product details</li>
+                <li><strong>Price:</strong> Product cost</li>
+                <li>
+                  <strong>Supplier ID:</strong> Foreign key referencing
+                  Suppliers table
+                </li>
+              </ul>
+            </div>
+
+            <div class="doc-section">
+              <h4>📊 Inventory Table</h4>
+              <p>Tracks stock levels and warehouse locations for products.</p>
+              <ul>
+                <li>
+                  <strong>ID:</strong> Unique identifier for each inventory
+                  record
+                </li>
+                <li>
+                  <strong>Product ID:</strong> Foreign key referencing Products
+                  table
+                </li>
+                <li><strong>Quantity:</strong> Current stock level</li>
+                <li>
+                  <strong>Warehouse Location:</strong> Physical storage location
+                </li>
+                <li>
+                  <strong>Last Updated:</strong> When inventory was last updated
+                </li>
+              </ul>
+            </div>
+
+            <div class="doc-section relationships">
+              <h4>🔗 Relationships</h4>
+              <p>
+                <strong>Suppliers → Products:</strong> One supplier can have
+                many products (1:N)
+              </p>
+              <p>
+                <strong>Products → Inventory:</strong> One product can have
+                multiple inventory records (1:N)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- <div class="quick-links-section">
+          <h3>🚀 Quick Links</h3>
+          <div class="link-grid">
+            <a href="/suppliers" class="quick-link">
+              <span>➕</span>
+              <span>Add Supplier</span>
+            </a>
+            <a href="/products" class="quick-link">
+              <span>➕</span>
+              <span>Add Product</span>
+            </a>
+            <a href="/inventory" class="quick-link">
+              <span>➕</span>
+              <span>Add to Inventory</span>
+            </a>
+          </div> -->
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

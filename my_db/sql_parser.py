@@ -269,8 +269,9 @@ def parse_select(command):
 
 def parse_update(command):
     """
-    Parse: UPDATE tablename SET col = value WHERE condition
-    Example: UPDATE suppliers SET email = 'new@email.com' WHERE id = 1
+    Parse: UPDATE tablename SET col = value, col2 = value2 WHERE condition
+    Example: UPDATE suppliers SET email = 'new@email.com', name = 'John' WHERE id = 1
+    Supports multiple column updates
     """
     try:
         command_upper = command.upper()
@@ -295,19 +296,46 @@ def parse_update(command):
         else:
             set_clause = rest
         
-        # Parse SET clause: "email = 'new@email.com'"
+        # Parse SET clause with multiple columns: "col1='value1', col2='value2'"
         if "=" not in set_clause:
             raise ValueError("Invalid SET clause format")
         
-        set_parts = set_clause.split("=", 1)  # Split only on first =
-        column = set_parts[0].strip()
-        value = set_parts[1].strip().strip("'\"")
+        # Split by comma, but be careful about quoted values
+        set_assignments = []
+        current_assignment = ""
+        in_quotes = False
+        quote_char = None
+        
+        for char in set_clause:
+            if char in ("'", '"') and (not in_quotes or quote_char == char):
+                in_quotes = not in_quotes
+                quote_char = char if in_quotes else None
+            
+            if char == ',' and not in_quotes:
+                if current_assignment.strip():
+                    set_assignments.append(current_assignment.strip())
+                current_assignment = ""
+            else:
+                current_assignment += char
+        
+        if current_assignment.strip():
+            set_assignments.append(current_assignment.strip())
+        
+        # Parse each assignment
+        updates = {}
+        for assignment in set_assignments:
+            if "=" not in assignment:
+                raise ValueError(f"Invalid assignment format: {assignment}")
+            
+            parts = assignment.split("=", 1)
+            column = parts[0].strip()
+            value = parts[1].strip().strip("'\"")
+            updates[column] = value
         
         return {
             "type": "UPDATE",
             "table": table_name,
-            "column": column,
-            "value": value,
+            "updates": updates,  # Dictionary of {column: value}
             "where": where_clause
         }
     
